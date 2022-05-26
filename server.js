@@ -9,42 +9,6 @@ let db;
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-let items = [
-  {
-    name: "truealesya",
-    id: 24208,
-    uniqueUrlName: null,
-    photos: {
-      small: null,
-      large: null,
-    },
-    status: null,
-    followed: false,
-  },
-  {
-    name: "Shamaich",
-    id: 24207,
-    uniqueUrlName: null,
-    photos: {
-      small: null,
-      large: null,
-    },
-    status: null,
-    followed: false,
-  },
-  {
-    name: "Oleksandr_Kozak",
-    id: 24206,
-    uniqueUrlName: null,
-    photos: {
-      small: null,
-      large: null,
-    },
-    status: null,
-    followed: false,
-  },
-];
-
 app.get("/", (req, res) => {
   res.send("Hello API");
 });
@@ -53,7 +17,10 @@ app.get("/users", (req, res) => {
   db.collection("items")
     .find()
     .toArray((err, docs) => {
-      if (err) throw err;
+      if (err) {
+        res.sendStatus(500);
+        throw err;
+      }
       res.send(docs);
     });
 });
@@ -62,7 +29,10 @@ app.get("/users/:id", (req, res) => {
   db.collection("items").findOne(
     { _id: ObjectID(req.params.id) },
     (err, doc) => {
-      if (err) throw err;
+      if (err) {
+        res.sendStatus(500);
+        throw err;
+      }
       res.send(doc);
     }
   );
@@ -79,28 +49,40 @@ app.post("/users", (req, res) => {
     status: null,
     followed: false,
   };
-  db.collection("items").insertOne(user, function (err, result) {
+  db.collection("items").insert(user, function (err, result) {
     if (err) {
-      console.log(err);
-      return res.sendStatus(500);
+      res.sendStatus(500);
+      throw err;
     }
   });
   res.send(user);
 });
 
 app.put("/users/:id", (req, res) => {
-  let user = items.find(function (user) {
-    return user.id === Number(req.params.id);
-  });
-  user.name = req.body.name;
-  res.sendStatus(200);
+  db.collection("items").updateOne(
+    { _id: ObjectID(req.params.id) },
+    { $set: { name: req.body.name } },
+    (err, result) => {
+      if (err) {
+        res.sendStatus(500);
+        throw err;
+      }
+      res.sendStatus(200);
+    }
+  );
 });
 
 app.delete("/users/:id", (req, res) => {
-  items = items.filter(function (user) {
-    return user.id !== Number(req.params.id);
-  });
-  res.sendStatus(200);
+  db.collection("items").deleteOne(
+    { _id: ObjectID(req.params.id) },
+    (err, result) => {
+      if (err) {
+        res.sendStatus(500);
+        throw err;
+      }
+      res.sendStatus(200);
+    }
+  );
 });
 
 MongoClient.connect("mongodb://localhost:27017", (err, client) => {
