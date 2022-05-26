@@ -1,12 +1,15 @@
-var express = require("express");
-var bodyParser = require("body-parser");
+let express = require("express");
+let bodyParser = require("body-parser");
+let MongoClient = require("mongodb").MongoClient;
+let ObjectID = require("mongodb").ObjectID;
 
-var app = express();
+let app = express();
+let db;
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-var items = [
+let items = [
   {
     name: "truealesya",
     id: 24208,
@@ -42,25 +45,32 @@ var items = [
   },
 ];
 
-app.get("/", function (req, res) {
+app.get("/", (req, res) => {
   res.send("Hello API");
 });
 
-app.get("/users", function (req, res) {
-  res.send(items);
+app.get("/users", (req, res) => {
+  db.collection("items")
+    .find()
+    .toArray((err, docs) => {
+      if (err) throw err;
+      res.send(docs);
+    });
 });
 
-app.get("/users/:id", function (req, res) {
-  var user = items.find(function (user) {
-    return user.id === Number(req.params.id);
-  });
-  res.send(user);
+app.get("/users/:id", (req, res) => {
+  db.collection("items").findOne(
+    { _id: ObjectID(req.params.id) },
+    (err, doc) => {
+      if (err) throw err;
+      res.send(doc);
+    }
+  );
 });
 
-app.post("/users", function (req, res) {
-  var user = {
+app.post("/users", (req, res) => {
+  let user = {
     name: req.body.name,
-    id: Date.now(),
     uniqueUrlName: null,
     photos: {
       small: null,
@@ -69,25 +79,35 @@ app.post("/users", function (req, res) {
     status: null,
     followed: false,
   };
-  items.push(user);
+  db.collection("items").insertOne(user, function (err, result) {
+    if (err) {
+      console.log(err);
+      return res.sendStatus(500);
+    }
+  });
   res.send(user);
 });
 
-app.put("/users/:id", function (req, res) {
-  var user = items.find(function (user) {
+app.put("/users/:id", (req, res) => {
+  let user = items.find(function (user) {
     return user.id === Number(req.params.id);
   });
   user.name = req.body.name;
   res.sendStatus(200);
 });
 
-app.delete("/users/:id", function (req, res) {
+app.delete("/users/:id", (req, res) => {
   items = items.filter(function (user) {
     return user.id !== Number(req.params.id);
   });
   res.sendStatus(200);
 });
 
-app.listen(3012, function () {
-  console.log("API app started");
+MongoClient.connect("mongodb://localhost:27017", (err, client) => {
+  if (err) throw err;
+  db = client.db("myDataBase");
+
+  app.listen(3012, function () {
+    console.log("API app started");
+  });
 });
