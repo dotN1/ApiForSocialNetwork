@@ -2,12 +2,14 @@ let express = require("express");
 let bodyParser = require("body-parser");
 let MongoClient = require("mongodb").MongoClient;
 let ObjectID = require("mongodb").ObjectID;
+let cors = require('cors');
 
 let app = express();
 let db;
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(cors({origin: 'http://localhost:3000'}));
 
 app.get("/", (req, res) => {
   res.send("Hello API");
